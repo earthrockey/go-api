@@ -1,0 +1,6 @@
+{
+	"ImportPath": "github.com/earthrockey/go-api",
+	"GoVersion": "go1.12",
+	"GodepVersion": "v80",
+	"Deps": []
+}
