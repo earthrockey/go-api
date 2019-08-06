@@ -40,7 +40,7 @@ func getPort() string {
 func handleRequest() {
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/getAddress", getAddressBookAll)
-	http.ListenAndServe(getPort(), nil)
+	http.ListenAndServe(":8080", nil)
 }
 
 func main() {
