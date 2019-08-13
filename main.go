@@ -4,45 +4,66 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
+
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
-type addressBook struct {
+type Book struct {
+	gorm.Model
 	Firstname string
-	Lastname  string
 	Code      int
-	Phone     string
 }
 
-func getAddressBookAll(w http.ResponseWriter, r *http.Request) {
-	addBook := addressBook{
-		Firstname: "Chaiyarin",
-		Lastname:  "Niamsuwan",
-		Code:      1993,
-		Phone:     "0870940955",
+func getBookAll(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	db := dbConn()
+	var books []Book
+	db.Find(&books)
+	json.NewEncoder(w).Encode(books)
+}
+
+func newBook(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	db := dbConn()
+	decoder := json.NewDecoder(r.Body)
+	var b Book
+	err := decoder.Decode(&b)
+	if err != nil {
+		panic(err)
 	}
-	json.NewEncoder(w).Encode(addBook)
+	db.Create(&b)
+	json.NewEncoder(w).Encode(b)
 }
 
 func homePage(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	fmt.Fprint(w, "Welcome to the HomePage!")
 }
 
-func getPort() string {
-	var port = os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-		fmt.Println("No Port In Heroku" + port)
+func dbConn() (db *gorm.DB) {
+	db, err := gorm.Open("mysql", "root:e575g73wk@tcp(172.17.0.2:3306)/go_api?charset=utf8&parseTime=True&loc=Local")
+	// db, err := gorm.Open("mysql", "root:e575g73wk@/go_api?charset=utf8&parseTime=True&loc=Local")
+	if err != nil {
+		panic(err.Error())
 	}
-	return ":" + port
+	return db
+}
+
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func handleRequest() {
 	http.HandleFunc("/", homePage)
-	http.HandleFunc("/getAddress", getAddressBookAll)
+	http.HandleFunc("/getBook", getBookAll)
+	http.HandleFunc("/newBook", newBook)
 	http.ListenAndServe(":8080", nil)
 }
 
 func main() {
+	db := dbConn()
+	db.AutoMigrate(&Book{})
+	defer db.Close()
 	handleRequest()
 }
